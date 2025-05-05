@@ -64,13 +64,7 @@ function App() {
                 <Download className="h-4 w-4 mr-1" />
                 Download Excel
               </button>
-              <button 
-                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center transition-colors"
-                onClick={clearAllData}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Clear All
-              </button>
+              
             </div>
           </div>
           <div className="p-4">
