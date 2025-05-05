@@ -20,19 +20,47 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
     shiftType: '',
     escort: 'No',
     fuel: '',
-    price: ''
+    price: '',
   };
 
   const [formData, setFormData] = useState<Trip>(initialFormState);
   const [error, setError] = useState<string | null>(null);
 
+  // State for time picker
+  const [hour, setHour] = useState('07');
+  const [minute, setMinute] = useState('30');
+  const [period, setPeriod] = useState('AM');
+
   useEffect(() => {
     if (editingTrip) {
       setFormData(editingTrip);
+      // Parse existing shiftTime if it exists
+      if (editingTrip.shiftTime) {
+        const timeParts = editingTrip.shiftTime.split(' ');
+        if (timeParts.length === 2) {
+          const [time, period] = timeParts;
+          const [h, m] = time.split(':');
+          setHour(h.padStart(2, '0'));
+          setMinute(m.padStart(2, '0'));
+          setPeriod(period);
+        }
+      }
     } else {
       setFormData(initialFormState);
+      // Reset time picker
+      setHour('00');
+      setMinute('00');
+      setPeriod('AM');
     }
   }, [editingTrip]);
+
+  useEffect(() => {
+    // Update formData.shiftTime whenever hour, minute, or period changes
+    setFormData(prev => ({
+      ...prev,
+      shiftTime: `${hour}:${minute} ${period}`
+    }));
+  }, [hour, minute, period]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
@@ -42,19 +70,33 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.location || !formData.tripId || !formData.vehicleNo) {
       setError('Please fill in all required fields');
       return;
     }
-    
+
     if (editingTrip) {
       onUpdateTrip(formData);
     } else {
       onAddTrip(formData);
       setFormData(initialFormState);
+      // Reset time picker after submit
+      setHour('00');
+      setMinute('00');
+      setPeriod('AM');
     }
   };
+
+  // Generate hours options (07-12, 01-06)
+  const hours = [
+    
+    '01', '02', '03', '04', '05', '06',
+    '07', '08', '09', '10', '11', '12'
+  ];
+
+  // Generate minutes options (30-36 as shown in the image, but we'll do 00-59)
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -64,7 +106,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           {error}
         </div>
       )}
-      
+
+      {/* Date */}
       <div className="space-y-1">
         <label htmlFor="date" className="block text-sm font-medium text-gray-700">
           Date
@@ -78,7 +121,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      
+
+      {/* Company */}
       <div className="space-y-1">
         <label htmlFor="company" className="block text-sm font-medium text-gray-700">
           Company Name
@@ -89,19 +133,13 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           onChange={handleChange}
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="Dupont">Dupont</option>
-          <option value="Celanese">Celanese</option>
-          <option value="IUY">IUY</option>
-          <option value="Dozen">Dozen</option>
-          <option value="Resource">Resource</option>
-          <option value="Infinixi">Infinixi</option>
-          <option value="ECLAT">ECLAT</option>
-          <option value="RVM">RVM</option>
-          <option value="Zomato">Zomato</option>
-          <option value="Other">Other</option>
+          {['Dupont', 'Celanese', 'IUY', 'Dozen', 'Resource', 'Infinixi', 'ECLAT', 'RVM', 'Zomato', 'Other'].map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
         </select>
       </div>
-      
+
+      {/* Location */}
       <div className="space-y-1">
         <label htmlFor="location" className="block text-sm font-medium text-gray-700">
           Location
@@ -115,7 +153,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      
+
+      {/* Trip ID */}
       <div className="space-y-1">
         <label htmlFor="tripId" className="block text-sm font-medium text-gray-700">
           Trip ID
@@ -129,7 +168,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      
+
+      {/* Vehicle Type */}
       <div className="space-y-1">
         <label htmlFor="vehicleType" className="block text-sm font-medium text-gray-700">
           Vehicle Type
@@ -145,7 +185,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           <option value="Van">Van</option>
         </select>
       </div>
-      
+
+      {/* Vehicle Number */}
       <div className="space-y-1">
         <label htmlFor="vehicleNo" className="block text-sm font-medium text-gray-700">
           Vehicle No #
@@ -158,30 +199,51 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Select Vehicle</option>
-          <option value="AP-39-TU-7041">AP-39-TU-7041</option>
-          <option value="AP-39-TU-9347">AP-39-TU-9347</option>
-          <option value="TS-08-UL-3670">TS-08-UL-3670</option>
-          <option value="TS-08-UE-8211">TS-08-UE-8211</option>
-          <option value="TS-08-UF-2498">TS-08-UF-2498</option>
-          <option value="TS-11-UC-3116">TS-11-UC-3116</option>
-          <option value="TG-16-T-0510">TG-16-T-0510</option>
+          {[
+            "AP-39-TU-7041", "AP-39-TU-9347", "TS-08-UL-3670",
+            "TS-08-UE-8211", "TS-08-UF-2498", "TS-11-UC-3116", "TG-16-T-0510"
+          ].map(v => (
+            <option key={v} value={v}>{v}</option>
+          ))}
         </select>
       </div>
-      
+
+      {/* Shift Time */}
       <div className="space-y-1">
         <label htmlFor="shiftTime" className="block text-sm font-medium text-gray-700">
           Shift Time
         </label>
-        <input
-          type="text"
-          id="shiftTime"
-          placeholder="e.g. 09:00 - 18:00"
-          value={formData.shiftTime}
-          onChange={handleChange}
-          className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex gap-2">
+          <select
+            value={hour}
+            onChange={(e) => setHour(e.target.value)}
+            className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {hours.map(h => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+          <select
+            value={minute}
+            onChange={(e) => setMinute(e.target.value)}
+            className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {minutes.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
+        </div>
       </div>
-      
+
+      {/* Shift Type */}
       <div className="space-y-1">
         <label htmlFor="shiftType" className="block text-sm font-medium text-gray-700">
           Shift Type
@@ -192,11 +254,13 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           onChange={handleChange}
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="login">login</option>
-          <option value="logout">logout</option>
+          <option value="">Select Shift Type</option>
+          <option value="login">Login</option>
+          <option value="logout">Logout</option>
         </select>
       </div>
-      
+
+      {/* Escort */}
       <div className="space-y-1">
         <label htmlFor="escort" className="block text-sm font-medium text-gray-700">
           Escort
@@ -211,7 +275,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           <option value="No">No</option>
         </select>
       </div>
-      
+
+      {/* Fuel */}
       <div className="space-y-1">
         <label htmlFor="fuel" className="block text-sm font-medium text-gray-700">
           Fuel (Liters)
@@ -225,7 +290,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      
+
+      {/* Price */}
       <div className="space-y-1">
         <label htmlFor="price" className="block text-sm font-medium text-gray-700">
           Price (₹)
@@ -238,7 +304,8 @@ export const TripForm: React.FC<TripFormProps> = ({ onAddTrip, onUpdateTrip, edi
           className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      
+
+      {/* Submit Button */}
       <div className="col-span-full">
         <button
           type="submit"
